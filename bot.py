@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 TO RUN THIS, need to run command: python -m pip install -U discord.py[voice]
+(obtains the required library, "discord.py")
+
+FOR AUDIO PLAYER TO WORK:
+- Need to install ffmpeg and set an environment variable!
+- Furthermore, run "python -m pip install -U youtube_dl" to get youtube_dl
+
 Also, this script uses a pickle file called "bot_info_dict" in the obj directory.
 This file is used to fetch your TOKEN, which is confidential and should be hidden from others.
 Simply create a "bot_info_dict.pkl" file with a dict containing: { "TOKEN" : <insert token here> }
@@ -14,10 +20,11 @@ IDEAS:
 
 import discord
 import asyncio
-from discord.ext import commands
 import os.path
 import pandas as pd
 import pickle
+import youtube_dl
+from discord.ext import commands
 from datetime import date
 
 
@@ -31,7 +38,7 @@ CSV_DIRECTORY = os.path.dirname(os.path.realpath(__file__)) + "\\members_data.cs
 SERVER_REFERENCE = None     #Will be used to grab a reference to the target server
 members_data = None     #We want the scope of this DataFrame to be at this level
                         #because we use it in several different places
-
+players = {} #This will allow control over the music player when used in multiple servers simultaneously
 
 def save_obj(obj, name):
     with open('obj/'+ name + '.pkl', 'wb') as f:
@@ -92,10 +99,21 @@ async def on_ready():
 async def ping():
     await client.say('PONG')
 
+@client.command(pass_context=True)
+async def play(context, url):
+    
+    server = context.message.server
+    author = context.message.author
+    voice_channel = author.voice_channel
+    vc = await client.join_voice_channel(voice_channel)
+
+    player = await vc.create_ytdl_player(url)
+    players[server.id] = player
+    player.start()
 
 async def mine_data(server_reference, df):  #This method defines how we collect data
     while True:
-        print("mining")
+        #print("mining")
         current_datetime = str(date.today())
         #NOTE: This block of code that mines status data is temporarily disabled while I
         #do further testing
