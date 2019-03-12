@@ -34,13 +34,16 @@ client = discord.Client()
 client = commands.Bot(command_prefix = '~')
 SERVER_NAME = "That next level shit"    #The name of the target server
 
+#Adding all extensions here will prevent need to use ospath to iterate
+#TODO: IMPLEMENT ospath SO THAT I DONT NEED TO MANUALLY KEEP TRACK OF THESE
+extensions = ['audioManager']
+
 #This will grab the directory that this script resides in and append the supposed
 #csv file location
 CSV_DIRECTORY = os.path.dirname(os.path.realpath(__file__)) + "\\members_data.csv"
 SERVER_REFERENCE = None     #Will be used to grab a reference to the target server
 members_data = None     #We want the scope of this DataFrame to be at this level
                         #because we use it in several different places
-players = {} #This will allow control over the music player when used in multiple servers simultaneously
 
 def save_obj(obj, name):
     with open('obj/'+ name + '.pkl', 'wb') as f:
@@ -102,23 +105,21 @@ async def on_ready():
     #Save the updated data
     members_data.to_csv(CSV_DIRECTORY)
 
+#This will check if this is the "main" file, by ensuring that it's not being
+#imported for use within another script
+if __name__ == '__main__':
+    for extension in extensions:
+        try:
+            client.load_extension(extension)
+            print('{} successfully loaded.'.format(extension))
+        except Exception as error:
+            print('{} cannot be loaded. [{}]'.format(extension, error))
+
 #This is the notation for the user to declare commands to the bot
 #In this example, the user would type "~ping" in the chat to recieve the output
 @client.command()
 async def ping():
     await client.say('PONG')
-
-@client.command(pass_context=True)
-async def play(context, url):
-    
-    server = context.message.server
-    author = context.message.author
-    voice_channel = author.voice_channel
-    vc = await client.join_voice_channel(voice_channel)
-
-    player = await vc.create_ytdl_player(url)
-    players[server.id] = player
-    player.start()
 
 async def mine_data(server_reference, df):  #This method defines how we collect data
     while True:
