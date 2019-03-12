@@ -2,6 +2,7 @@
 """
 TO RUN THIS, need to run command: python -m pip install -U discord.py[voice]
 (obtains the required library, "discord.py")
+If not using Anaconda, may need to install Pandas using "pip install pandas"
 
 FOR AUDIO PLAYER TO WORK:
 - Need to install ffmpeg and set an environment variable!
@@ -13,6 +14,7 @@ Simply create a "bot_info_dict.pkl" file with a dict containing: { "TOKEN" : <in
 
 @Author Jake Eickmeier
 Made with python 3.6.7
+
 IDEAS:
 1. PIE GRAPH FOR GAMES PLAYED
 2. GRAPH OF PEAK HOURS
@@ -48,9 +50,16 @@ def load_obj(name):
     with open('obj/' + name + '.pkl', 'rb') as f:
         return pickle.load(f)
 
+"""
+#If still needing to create pickle file, here's the necessary code:
+infoDict = {"TOKEN" : ""}
+save_obj(infoDict, "bot_info_dict")
+"""
+
 #Using pickle for this will allow me to hide my token using .gitignore so that
 #observers of my code can't ship altered code to my own servers.
 TOKEN = load_obj("bot_info_dict")["TOKEN"]
+
 
 @client.event
 async def on_ready():
