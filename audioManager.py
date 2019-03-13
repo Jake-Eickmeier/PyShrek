@@ -1,5 +1,5 @@
 #Please note: A lot of the code for this cog was acquired from https://github.com/Rapptz/discord.py/blob/async/examples/playlist.py
-#this repo provided a polished working playlist example, which I tweaked to better represent my goals for this bot.
+#this repo provided a polished working playlist example, which I tweaked to better represent my goals for this client.
 
 import discord
 import asyncio
@@ -27,13 +27,13 @@ class VoiceEntry:
         return fmt.format(self.player, self.requester)
 
 class VoiceState:
-    def __init__(self, bot):
+    def __init__(self, client):
         self.current = None
         self.voice = None
-        self.bot = bot
+        self.client = client
         self.play_next_song = asyncio.Event()
         self.songs = asyncio.Queue()
-        self.audio_player = self.bot.loop.create_task(self.audio_player_task())
+        self.audio_player = self.client.loop.create_task(self.audio_player_task())
 
     def is_playing(self):
         if self.voice is None or self.current is None:
@@ -51,13 +51,13 @@ class VoiceState:
             self.player.stop()
 
     def toggle_next(self):
-        self.bot.loop.call_soon_threadsafe(self.play_next_song.set)
+        self.client.loop.call_soon_threadsafe(self.play_next_song.set)
 
     async def audio_player_task(self):
         while True:
             self.play_next_song.clear()
             self.current = await self.songs.get()
-            await self.bot.send_message(self.current.channel, 'Now playing ' + str(self.current))
+            await self.client.send_message(self.current.channel, 'Now playing ' + str(self.current))
             self.current.player.start()
             await self.play_next_song.wait()
 
@@ -65,20 +65,20 @@ class AudioManager:
     #Voice related commands.
     #Works in multiple servers at once.
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, client):
+        self.client = client
         self.voice_states = {}
 
     def get_voice_state(self, server):
         state = self.voice_states.get(server.id)
         if state is None:
-            state = VoiceState(self.bot)
+            state = VoiceState(self.client)
             self.voice_states[server.id] = state
 
         return state
 
     async def create_voice_client(self, channel):
-        voice = await self.bot.join_voice_channel(channel)
+        voice = await self.client.join_voice_channel(channel)
         state = self.get_voice_state(channel.server)
         state.voice = voice
 
@@ -87,7 +87,7 @@ class AudioManager:
             try:
                 state.audio_player.cancel()
                 if state.voice:
-                    self.bot.loop.create_task(state.voice.disconnect())
+                    self.client.loop.create_task(state.voice.disconnect())
             except:
                 pass
 
@@ -97,24 +97,24 @@ class AudioManager:
         try:
             await self.create_voice_client(channel)
         except discord.ClientException:
-            await self.bot.say('Already in a voice channel...')
+            await self.client.say('Already in a voice channel...')
         except discord.InvalidArgument:
-            await self.bot.say('This is not a voice channel...')
+            await self.client.say('This is not a voice channel...')
         else:
-            await self.bot.say('Ready to play audio in ' + channel.name)
+            await self.client.say('Ready to play audio in ' + channel.name)
 
     @commands.command(pass_context=True, no_pm=True)
     async def summon(self, ctx):
-        #Summons the bot to join your voice channel
-        #Use this when bot may already be in a voice channel
+        #Summons the client to join your voice channel
+        #Use this when client may already be in a voice channel
         summoned_channel = ctx.message.author.voice_channel
         if summoned_channel is None:
-            await self.bot.say('You are not in a voice channel.')
+            await self.client.say('You are not in a voice channel.')
             return False
 
         state = self.get_voice_state(ctx.message.server)
         if state.voice is None:
-            state.voice = await self.bot.join_voice_channel(summoned_channel)
+            state.voice = await self.client.join_voice_channel(summoned_channel)
         else:
             await state.voice.move_to(summoned_channel)
 
@@ -145,11 +145,11 @@ class AudioManager:
             player = await state.voice.create_ytdl_player(song, ytdl_options=opts, after=state.toggle_next)
         except Exception as e:
             fmt = 'An error occurred while processing this request: ```py\n{}: {}\n```'
-            await self.bot.send_message(ctx.message.channel, fmt.format(type(e).__name__, e))
+            await self.client.send_message(ctx.message.channel, fmt.format(type(e).__name__, e))
         else:
             player.volume = 0.6
             entry = VoiceEntry(ctx.message, player)
-            await self.bot.say('Enqueued ' + str(entry))
+            await self.client.say('Enqueued ' + str(entry))
             await state.songs.put(entry)
 
     @commands.command(pass_context=True, no_pm=True)
@@ -191,10 +191,10 @@ class AudioManager:
         #Skip a song in the queue
         state = self.get_voice_state(ctx.message.server)
         if not state.is_playing():
-            await self.bot.say('Not playing any music right now...')
+            await self.client.say('Not playing any music right now...')
             return
 
-        await self.bot.say('Skipping song')
+        await self.client.say('Skipping song')
         state.skip()
 
     @commands.command(pass_context=True, no_pm=True)
@@ -202,9 +202,9 @@ class AudioManager:
         #Shows info about the currently played song
         state = self.get_voice_state(ctx.message.server)
         if state.current is None:
-            await self.bot.say('Not playing anything.')
+            await self.client.say('Not playing anything.')
         else:
-            await self.bot.say('Now playing {} '.format(state.current))
+            await self.client.say('Now playing {} '.format(state.current))
 
 
 def setup(client):
