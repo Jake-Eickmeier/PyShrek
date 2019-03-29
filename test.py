@@ -1,4 +1,4 @@
-"""
+
 #A BASIC EXAMPLE OF HOW TO SET UP COROUTINES IN COGS
 
 import discord
@@ -9,6 +9,8 @@ class Class:
 
     def __init__(self, client):
         self.client = client
+        self.server_list = self.client.servers
+
         self.client.loop.create_task(self.taskName())
 
     async def taskName(self):
@@ -18,4 +20,3 @@ class Class:
 
 def setup(client):
     client.add_cog(Class(client))
-"""
